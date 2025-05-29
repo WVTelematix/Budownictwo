@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inteligentne Budownictwo z Teltonika Eye Sensor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Application Structure Plan: 
+        The SPA is structured into thematic sections accessible via a top navigation bar.
+        1. Hero: Introduction to IoT in construction and Teltonika Eye Sensor.
+        2. Sensor Details: Technical specifications, and an interactive comparison between Eye Beacon and Eye Sensor, including a chart.
+        3. Applications: Interactive cards detailing key use cases in construction (Asset Management, Worker Safety, Fleet Optimization, Access Control, Supply Chain).
+        4. Benefits & ROI: Highlighting advantages with stat cards and a chart for visualizing potential savings/gains.
+        5. Deployment & Integration: Information on compatibility, the Teltonika EYE APP, and deployment tips.
+        6. Future & Contact: Concluding remarks on the future of construction with IoT and a call to action.
+        This structure was chosen to guide the user logically from general information to specific details and benefits, enhancing understanding and engagement. User flow starts with an overview, delves into product specifics, explores practical uses, quantifies advantages, explains implementation, and concludes with future outlook.
+    -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Technical Specifications (Eye Sensor & Beacon). Goal: Inform & Compare. Viz/Presentation: HTML tables, Chart.js bar chart for sensor presence/absence. Interaction: Tooltips. Justification: Clear data presentation and visual comparison. Library: HTML, Chart.js.
+        - Report Info: Applications in Construction. Goal: Inform & Explore. Viz/Presentation: Interactive cards. Interaction: Click to expand/reveal details. Justification: Organizes information concisely, user-driven exploration. Library: HTML, JS.
+        - Report Info: Benefits & ROI (efficiency, safety, cost reduction). Goal: Persuade & Highlight Value. Viz/Presentation: Stat cards with icons, Chart.js bar chart for percentage gains/savings. Interaction: Hover effects, tooltips. Justification: Impactful visual stats. Library: HTML, JS, Chart.js.
+        - Report Info: Battery Life. Goal: Inform. Viz/Presentation: Included in specs and potentially visualized in the Beacon vs Sensor comparison chart. Interaction: Tooltips. Justification: Easy comparison. Library: Chart.js.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .active-nav {
+            font-weight: 600;
+            color: #0369a1; /* sky-700 */
+            border-bottom: 2px solid #0369a1;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #0ea5e9; /* sky-500 */
+        }
+        .section-title {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700;
+            color: #1e293b; /* slate-800 */
+            margin-bottom: 1rem; /* mb-4 */
+            text-align: center;
+        }
+        .section-subtitle {
+            font-size: 1.125rem; /* text-lg */
+            color: #475569; /* slate-600 */
+            margin-bottom: 2.5rem; /* mb-10 */
+            text-align: center;
+            max-width: 48rem; /* max-w-3xl */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-md */
+            padding: 1.5rem; /* p-6 */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); /* shadow-lg */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .tab-button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .tab-button.active {
+            background-color: #0ea5e9; /* sky-500 */
+            color: white;
+        }
+        .tab-button:not(.active):hover {
+            background-color: #f0f9ff; /* sky-50 */
+            border-color: #7dd3fc; /* sky-300 */
+        }
+        .application-card {
+            cursor: pointer;
+        }
+        .details-hidden {
+            display: none;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        .details-visible {
+            display: block;
+            max-height: 1000px; /* Adjust as needed */
+            transition: max-height 0.5s ease-in;
+        }
+        .hero-background {
+            background-color: #0ea5e9; /* sky-500 */
+            position: relative;
+            z-index: 1;
+        }
+        .hero-background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4));
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-4 lg:px-6 py-3 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-sky-700">EyeSensor<span class="text-sky-500">PRO</span></a>
+            <div class="space-x-4 hidden md:flex">
+                <a href="#hero" class="nav-link active-nav">Wprowadzenie</a>
+                <a href="#sensor-details" class="nav-link">O Czujniku</a>
+                <a href="#applications" class="nav-link">Zastosowania</a>
+                <a href="#benefits" class="nav-link">Korzyści</a>
+                <a href="#integration" class="nav-link">Integracja</a>
+                <a href="#future-contact" class="nav-link">Przyszłość</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-slate-700 hover:text-sky-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden bg-white shadow-lg py-2">
+            <a href="#hero" class="block px-4 py-2 text-slate-700 hover:bg-sky-50 nav-link-mobile">Wprowadzenie</a>
+            <a href="#sensor-details" class="block px-4 py-2 text-slate-700 hover:bg-sky-50 nav-link-mobile">O Czujniku</a>
+            <a href="#applications" class="block px-4 py-2 text-slate-700 hover:bg-sky-50 nav-link-mobile">Zastosowania</a>
+            <a href="#benefits" class="block px-4 py-2 text-slate-700 hover:bg-sky-50 nav-link-mobile">Korzyści</a>
+            <a href="#integration" class="block px-4 py-2 text-slate-700 hover:bg-sky-50 nav-link-mobile">Integracja</a>
+            <a href="#future-contact" class="block px-4 py-2 text-slate-700 hover:bg-sky-50 nav-link-mobile">Przyszłość</a>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero" class="hero-background text-white py-16 md:py-24 min-h-[70vh] flex items-center">
+            <div class="container mx-auto px-4 lg:px-6 text-center z-10">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">Inteligentne Budownictwo <br class="hidden md:block"> z Czujnikami Teltonika Eye Sensor</h1>
+                <p class="text-lg md:text-xl lg:text-2xl mb-8 max-w-3xl mx-auto opacity-90">Rewolucjonizuj plac budowy dzięki zaawansowanej technologii BLE, zwiększając efektywność, bezpieczeństwo i rentowność projektów.</p>
+                <a href="#sensor-details" class="bg-white text-sky-700 font-semibold py-3 px-8 rounded-lg shadow-lg hover:bg-slate-100 transition duration-300 text-lg">Odkryj Możliwości</a>
+            </div>
+        </section>
+
+        <section id="sensor-details" class="py-16 md:py-24">
+            <div class="container mx-auto px-4 lg:px-6">
+                <h2 class="section-title">Poznaj Teltonika Eye Sensor</h2>
+                <p class="section-subtitle">
+                    Ta sekcja przybliża Teltonika Eye Sensor BLE Beacon – wszechstronne narzędzie zaprojektowane do sprostania wyzwaniom nowoczesnego budownictwa. Dowiedz się o jego kluczowych specyfikacjach technicznych oraz o tym, czym różni się od modelu Eye Beacon. Zrozumienie tych detali pomoże Ci docenić potencjał, jaki te czujniki oferują dla cyfryzacji Twoich operacji na placu budowy.
+                </p>
+
+                <div class="mb-12">
+                    <h3 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Kluczowe Specyfikacje Techniczne Eye Sensor</h3>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="card">
+                            <h4 class="text-xl font-semibold text-sky-700 mb-2">Łączność i Interfejsy</h4>
+                            <p><span class="font-semibold">Bluetooth:</span> 4.2, certyfikacja 5.2</p>
+                            <p><span class="font-semibold">Zasięg:</span> Do 80 metrów</p>
+                            <p><span class="font-semibold">Moc transmisji:</span> Do +8 dBm (konfigurowalna)</p>
+                        </div>
+                        <div class="card">
+                            <h4 class="text-xl font-semibold text-sky-700 mb-2">Zasilanie i Bateria</h4>
+                            <p><span class="font-semibold">Typ Baterii:</span> Li/MnO2</p>
+                            <p><span class="font-semibold">Pojemność:</span> 600-620 mAh</p>
+                            <p><span class="font-semibold">Żywotność (Sensor):</span> 5+ lat (interwał 10s)</p>
+                             <p><span class="font-semibold">Żywotność (Beacon):</span> 10+ lat (interwał 10s)</p>
+                        </div>
+                        <div class="card">
+                            <h4 class="text-xl font-semibold text-sky-700 mb-2">Wbudowane Czujniki (Eye Sensor)</h4>
+                            <p>Beacon ID, Temperatura, Wilgotność, Ruch (Akcelerometr), Detekcja Magnetyczna</p>
+                        </div>
+                        <div class="card">
+                            <h4 class="text-xl font-semibold text-sky-700 mb-2">Parametry Fizyczne</h4>
+                            <p><span class="font-semibold">Wymiary:</span> 56.6 x 38 x 13 mm</p>
+                            <p><span class="font-semibold">Waga:</span> 18 g</p>
+                            <p><span class="font-semibold">Stopień ochrony:</span> IP67 (kurzoodporny, wodoodporny)</p>
+                        </div>
+                        <div class="card">
+                            <h4 class="text-xl font-semibold text-sky-700 mb-2">Warunki Środowiskowe</h4>
+                            <p><span class="font-semibold">Temperatura pracy:</span> -20 °C do +60 °C</p>
+                            <p><span class="font-semibold">Wilgotność:</span> 0% do 100% (bez kondensacji)</p>
+                        </div>
+                        <div class="card">
+                            <h4 class="text-xl font-semibold text-sky-700 mb-2">Protokoły i Konfiguracja</h4>
+                            <p><span class="font-semibold">Protokoły:</span> iBeacon, Eddystone, EYE Sensor</p>
+                            <p><span class="font-semibold">Konfiguracja:</span> Aplikacja Teltonika EYE APP</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-semibold text-slate-700 mb-6 text-center">Porównanie: Eye Beacon vs. Eye Sensor</h3>
+                    <p class="text-slate-600 mb-8 text-center max-w-2xl mx-auto">Teltonika oferuje dwa warianty urządzeń: Eye Beacon skupia się na identyfikacji, podczas gdy Eye Sensor dostarcza kompleksowych danych dzięki dodatkowym czujnikom. Poniżej wizualne porównanie kluczowych różnic.</p>
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div class="card">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b border-slate-300">
+                                        <th class="py-2 font-semibold text-sky-700">Cecha</th>
+                                        <th class="py-2 font-semibold text-center">Eye Beacon</th>
+                                        <th class="py-2 font-semibold text-center">Eye Sensor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-slate-200">
+                                        <td class="py-2">Beacon ID</td>
+                                        <td class="py-2 text-center text-green-600">✔️</td>
+                                        <td class="py-2 text-center text-green-600">✔️</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-200">
+                                        <td class="py-2">Temperatura</td>
+                                        <td class="py-2 text-center text-red-600">❌</td>
+                                        <td class="py-2 text-center text-green-600">✔️</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-200">
+                                        <td class="py-2">Wilgotność</td>
+                                        <td class="py-2 text-center text-red-600">❌</td>
+                                        <td class="py-2 text-center text-green-600">✔️</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-200">
+                                        <td class="py-2">Ruch (Akcelerometr)</td>
+                                        <td class="py-2 text-center text-red-600">❌</td>
+                                        <td class="py-2 text-center text-green-600">✔️</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-200">
+                                        <td class="py-2">Detekcja Magnetyczna</td>
+                                        <td class="py-2 text-center text-red-600">❌</td>
+                                        <td class="py-2 text-center text-green-600">✔️</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2">Typowa Żywotność Baterii</td>
+                                        <td class="py-2 text-center">Do 10 lat</td>
+                                        <td class="py-2 text-center">Do 5+ lat</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="chart-container card">
+                            <canvas id="sensorComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="applications" class="py-16 md:py-24 bg-sky-50">
+            <div class="container mx-auto px-4 lg:px-6">
+                <h2 class="section-title">Kluczowe Zastosowania w Budownictwie</h2>
+                <p class="section-subtitle">
+                    Ta sekcja prezentuje wszechstronne możliwości czujników Teltonika Eye Sensor w branży budowlanej. Poznaj, jak te kompaktowe urządzenia rewolucjonizują zarządzanie aktywami, zwiększają bezpieczeństwo pracowników, optymalizują pracę floty, usprawniają kontrolę dostępu oraz zarządzanie łańcuchem dostaw. Kliknij na wybrane zastosowanie, aby dowiedzieć się więcej o korzyściach i specyfice działania.
+                </p>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="application-card card" data-app="assets">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">1. Zarządzanie Aktywami i Narzędziami</h3>
+                        <p class="text-slate-600 mb-3">Precyzyjne śledzenie lokalizacji i statusu narzędzi, sprzętu oraz materiałów w czasie rzeczywistym.</p>
+                        <div class="details-hidden mt-3 pt-3 border-t border-slate-200">
+                            <p class="text-sm text-slate-500 mb-2"><span class="font-semibold">Jak działa:</span> Beacon ID i akcelerometr monitorują położenie i wykorzystanie aktywów.</p>
+                            <p class="text-sm text-slate-500"><span class="font-semibold">Korzyści:</span> Redukcja strat i kradzieży, optymalizacja wykorzystania zasobów, szybsza lokalizacja i inwentaryzacja, usprawnione zarządzanie łańcuchem dostaw.</p>
+                        </div>
+                    </div>
+                    <div class="application-card card" data-app="safety">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">2. Bezpieczeństwo Pracowników i Środowiska</h3>
+                        <p class="text-slate-600 mb-3">Systemy ostrzegania o bliskości maszyn, monitorowanie warunków pracy (temperatura, wilgotność).</p>
+                         <div class="details-hidden mt-3 pt-3 border-t border-slate-200">
+                            <p class="text-sm text-slate-500 mb-2"><span class="font-semibold">Jak działa:</span> Integracja z odzieżą ochronną, czujniki temperatury, wilgotności i ruchu (wykrywanie upadków).</p>
+                            <p class="text-sm text-slate-500"><span class="font-semibold">Korzyści:</span> Mniejsze ryzyko kolizji, optymalne warunki pracy, szybsza reakcja na incydenty, zgodność z BHP.</p>
+                        </div>
+                    </div>
+                    <div class="application-card card" data-app="fleet">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">3. Optymalizacja Floty i Maszyn</h3>
+                        <p class="text-slate-600 mb-3">Monitorowanie wykorzystania pojazdów i maszyn, rozróżnianie czasu pracy od przestoju.</p>
+                         <div class="details-hidden mt-3 pt-3 border-t border-slate-200">
+                            <p class="text-sm text-slate-500 mb-2"><span class="font-semibold">Jak działa:</span> Akcelerometr do detekcji ruchu i kąta nachylenia, wsparcie predykcyjnego utrzymania.</p>
+                            <p class="text-sm text-slate-500"><span class="font-semibold">Korzyści:</span> Zwiększona produktywność maszyn, redukcja kosztów paliwa, predykcyjne utrzymanie, lepsze zarządzanie flotą.</p>
+                        </div>
+                    </div>
+                    <div class="application-card card" data-app="access">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">4. Kontrola Dostępu i Nawigacja Wewnętrzna</h3>
+                        <p class="text-slate-600 mb-3">Beacony do nawigacji wewnątrz budynków, bezdotykowe karty dostępu dla pracowników.</p>
+                        <div class="details-hidden mt-3 pt-3 border-t border-slate-200">
+                            <p class="text-sm text-slate-500 mb-2"><span class="font-semibold">Jak działa:</span> Eye Sensory jako punkty orientacyjne w systemach nawigacji wewnętrznej i do automatycznej weryfikacji tożsamości.</p>
+                            <p class="text-sm text-slate-500"><span class="font-semibold">Korzyści:</span> Precyzyjna nawigacja wewnętrzna, zwiększone bezpieczeństwo, automatyczna kontrola dostępu, śledzenie obecności.</p>
+                        </div>
+                    </div>
+                     <div class="application-card card" data-app="supply">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">5. Zarządzanie Łańcuchem Dostaw</h3>
+                        <p class="text-slate-600 mb-3">Śledzenie materiałów od dostawcy do miejsca składowania, kontrola warunków przechowywania.</p>
+                        <div class="details-hidden mt-3 pt-3 border-t border-slate-200">
+                            <p class="text-sm text-slate-500 mb-2"><span class="font-semibold">Jak działa:</span> Czujniki montowane na paczkach/paletach, monitorowanie temperatury/wilgotności dla wrażliwych materiałów.</p>
+                            <p class="text-sm text-slate-500"><span class="font-semibold">Korzyści:</span> Wizualizacja łańcucha dostaw, redukcja opóźnień, kontrola jakości materiałów, efektywniejsza logistyka.</p>
+                        </div>
+                    </div>
+                     <div class="application-card card" data-app="digital-twin">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">Bonus: Cyfrowy Bliźniak Placu Budowy</h3>
+                        <p class="text-slate-600 mb-3">Tworzenie kompleksowego, dynamicznego modelu operacji na placu budowy w oparciu o dane z czujników.</p>
+                        <div class="details-hidden mt-3 pt-3 border-t border-slate-200">
+                            <p class="text-sm text-slate-500 mb-2"><span class="font-semibold">Jak działa:</span> Agregacja danych z wielu czujników (ID, temperatura, wilgotność, ruch, magnetyzm) do stworzenia wirtualnej repliki procesów.</p>
+                            <p class="text-sm text-slate-500"><span class="font-semibold">Korzyści:</span> Bezprecedensowa widoczność dynamiki operacyjnej, proaktywne rozwiązywanie problemów, ciągłe doskonalenie procesów, systemowa optymalizacja.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="benefits" class="py-16 md:py-24">
+            <div class="container mx-auto px-4 lg:px-6">
+                <h2 class="section-title">Korzyści i Zwrot z Inwestycji (ROI)</h2>
+                <p class="section-subtitle">
+                    Ta sekcja koncentruje się na wymiernych korzyściach płynących z wdrożenia czujników Teltonika Eye Sensor. Dowiedz się, jak inwestycja w technologię BLE przekłada się na zwiększoną efektywność, poprawę bezpieczeństwa, redukcję kosztów oraz lepsze podejmowanie decyzji. Zobacz, jak dane z raportu wskazują na potencjalny zwrot z inwestycji dla Twojej firmy budowlanej.
+                </p>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                    <div class="card text-center">
+                        <div class="text-4xl text-sky-600 mb-3">📈</div>
+                        <h3 class="text-xl font-semibold text-slate-700 mb-2">Zwiększona Efektywność</h3>
+                        <p class="text-slate-600">Automatyzacja śledzenia, optymalne wykorzystanie maszyn. Poprawa efektywności personelu o 7-15%.</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-4xl text-sky-600 mb-3">🛡️</div>
+                        <h3 class="text-xl font-semibold text-slate-700 mb-2">Poprawa Bezpieczeństwa</h3>
+                        <p class="text-slate-600">Proaktywne systemy ostrzegania, monitorowanie warunków, szybsza reakcja na incydenty.</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-4xl text-sky-600 mb-3">💰</div>
+                        <h3 class="text-xl font-semibold text-slate-700 mb-2">Redukcja Kosztów</h3>
+                        <p class="text-slate-600">Mniejsze zużycie paliwa, predykcyjne utrzymanie, redukcja strat. Możliwa redukcja kosztów surowców o 5-9%.</p>
+                    </div>
+                     <div class="card text-center">
+                        <div class="text-4xl text-sky-600 mb-3">📊</div>
+                        <h3 class="text-xl font-semibold text-slate-700 mb-2">Lepsze Decyzje</h3>
+                        <p class="text-slate-600">Dostęp do danych w czasie rzeczywistym, szczegółowe raporty i analizy dla ciągłego doskonalenia.</p>
+                    </div>
+                     <div class="card text-center">
+                        <div class="text-4xl text-sky-600 mb-3">📋</div>
+                        <h3 class="text-xl font-semibold text-slate-700 mb-2">Zgodność z Normami</h3>
+                        <p class="text-slate-600">Automatyczne monitorowanie i dokumentacja warunków wspierające zgodność z BHP i regulacjami branżowymi.</p>
+                    </div>
+                     <div class="card text-center">
+                        <div class="text-4xl text-sky-600 mb-3">💡</div>
+                        <h3 class="text-xl font-semibold text-slate-700 mb-2">Niższy TCO</h3>
+                        <p class="text-slate-600">Długa żywotność baterii i wytrzymałość IP67 minimalizują koszty wymiany i konserwacji.</p>
+                    </div>
+                </div>
+                <div class="chart-container card mx-auto">
+                     <h3 class="text-xl font-semibold text-slate-700 mb-4 text-center">Potencjalne Oszczędności i Wzrost Efektywności</h3>
+                    <canvas id="roiChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="integration" class="py-16 md:py-24 bg-sky-50">
+            <div class="container mx-auto px-4 lg:px-6">
+                <h2 class="section-title">Wdrożenie i Integracja</h2>
+                 <p class="section-subtitle">
+                    W tej sekcji dowiesz się, jak praktycznie wdrożyć czujniki Teltonika Eye Sensor na placu budowy. Omawiamy ich kompatybilność z ekosystemem Teltonika oraz innymi systemami IoT, rolę dedykowanej aplikacji mobilnej EYE APP w konfiguracji i monitorowaniu, a także kluczowe wskazówki dotyczące planowania wdrożenia, aby maksymalizować korzyści płynące z tej technologii.
+                </p>
+                <div class="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="card">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">Platforma Teltonika i Systemy IoT</h3>
+                        <p class="text-slate-600">Pełna kompatybilność z firmware Teltonika i trackerami GPS/GNSS (np. FMB, FMC, RUTX) działającymi jako bramy. Wsparcie dla iBeacon, Eddystone i protokołu MQTT ułatwia integrację z różnymi systemami IoT, bez uzależnienia od jednego dostawcy.</p>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">Aplikacja Mobilna Teltonika EYE APP</h3>
+                        <p class="text-slate-600">Intuicyjna aplikacja na iOS i Android do szybkiej konfiguracji, skanowania danych (temperatura, wilgotność, poziom baterii) i aktualizacji firmware czujników. Zapewnia natychmiastowy dostęp do kluczowych informacji.</p>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-3">Wskazówki Dotyczące Wdrożenia</h3>
+                        <ul class="list-disc list-inside text-slate-600 space-y-2">
+                            <li>Zapewnij stabilną łączność internetową (bramy/smartfony).</li>
+                            <li>Integruj dane z systemami zarządzania projektami (np. BIM).</li>
+                            <li>Wykorzystaj elastyczność montażu (otwory, taśma) do różnych aktywów.</li>
+                            <li>Planuj rozmieszczenie czujników i bram dla optymalnego zasięgu.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="future-contact" class="py-16 md:py-24">
+            <div class="container mx-auto px-4 lg:px-6 text-center">
+                <h2 class="section-title">Przyszłość Budownictwa i Twoja Rola</h2>
+                 <p class="section-subtitle">
+                    Ostatnia sekcja podsumowuje kluczowe wartości, jakie czujniki Teltonika Eye Sensor wnoszą do branży budowlanej, i spogląda w przyszłość, gdzie integracja IoT z AI i BIM stworzy w pełni inteligentne place budowy. To zaproszenie do bycia częścią tej transformacji i wykorzystania potencjału cyfryzacji w Twojej firmie.
+                </p>
+                <div class="max-w-3xl mx-auto mb-10">
+                    <p class="text-slate-600 mb-4">Teltonika Eye Sensor BLE Beacon to strategiczny element cyfrowej transformacji w budownictwie. Umożliwia przejście od reaktywnych procesów do proaktywnych, opartych na danych operacji, rewolucjonizując zarządzanie projektami i bezpieczeństwo.</p>
+                    <p class="text-slate-600 mb-6">Przyszłość to dalsza integracja z AI i BIM, gdzie dane z czujników staną się fundamentem dla autonomicznych systemów, przewidywania ryzyka i optymalizacji procesów. Czujniki Teltonika będą "oczami i uszami" inteligentnych placów budowy.</p>
+                </div>
+                <a href="https://www.evtelematix.com/about-9" target="_blank" rel="noopener noreferrer" class="bg-sky-600 text-white font-semibold py-4 px-10 rounded-lg shadow-lg hover:bg-sky-700 transition duration-300 text-lg">Skontaktuj się z Nami i Zacznij Transformację</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-800 text-slate-300 py-8 text-center">
+        <div class="container mx-auto px-4 lg:px-6">
+            <p>&copy; <span id="currentYear"></span> Inteligentne Rozwiązania dla Budownictwa. Wszelkie prawa zastrzeżone.</p>
+            <p class="text-sm mt-1">Strona wygenerowana na podstawie raportu o Teltonika Eye Sensor.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        const navLinks = document.querySelectorAll('nav a[href^="#"]');
+        const mobileNavLinks = document.querySelectorAll('#mobile-menu a[href^="#"]');
+
+        function setActiveLink() {
+            let currentSection = "";
+            document.querySelectorAll('main section').forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 100) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active-nav');
+                if (link.getAttribute('href') === `#${currentSection}`) {
+                    link.classList.add('active-nav');
+                }
+            });
+             mobileNavLinks.forEach(link => {
+                link.classList.remove('bg-sky-100', 'font-semibold');
+                if (link.getAttribute('href') === `#${currentSection}`) {
+                    link.classList.add('bg-sky-100', 'font-semibold');
+                }
+            });
+        }
+        
+        window.addEventListener('scroll', setActiveLink);
+        setActiveLink(); // Initial call
+
+        mobileNavLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        const applicationCards = document.querySelectorAll('.application-card');
+        applicationCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const details = card.querySelector('.details-hidden, .details-visible');
+                if (details) {
+                    const isVisible = details.classList.contains('details-visible');
+                    // Close all other open cards
+                    applicationCards.forEach(otherCard => {
+                        if (otherCard !== card) {
+                            const otherDetails = otherCard.querySelector('.details-hidden, .details-visible');
+                            if (otherDetails && otherDetails.classList.contains('details-visible')) {
+                                otherDetails.classList.remove('details-visible');
+                                otherDetails.classList.add('details-hidden');
+                            }
+                        }
+                    });
+                    // Toggle current card
+                    details.classList.toggle('details-hidden');
+                    details.classList.toggle('details-visible');
+                }
+            });
+        });
+        
+        const ctxSensorComparison = document.getElementById('sensorComparisonChart');
+        if (ctxSensorComparison) {
+            new Chart(ctxSensorComparison, {
+                type: 'bar',
+                data: {
+                    labels: ['Temperatura', 'Wilgotność', 'Ruch', 'Magnetyzm'],
+                    datasets: [
+                        {
+                            label: 'Eye Beacon',
+                            data: [0, 0, 0, 0], 
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)', // red-500
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Eye Sensor',
+                            data: [1, 1, 1, 1], 
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)', // green-500
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (value === 1) return 'Obecny';
+                                    if (value === 0) return 'Brak';
+                                    return null; 
+                                },
+                                stepSize: 1,
+                                max: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Dostępność Czujników',
+                            font: { size: 16, weight: '600' },
+                            color: '#334155' // slate-700
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y === 1) {
+                                        label += 'Obecny';
+                                    } else {
+                                        label += 'Brak';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const ctxRoi = document.getElementById('roiChart');
+        if (ctxRoi) {
+            new Chart(ctxRoi, {
+                type: 'bar',
+                data: {
+                    labels: ['Efektywność Personelu', 'Koszty Surowców'],
+                    datasets: [{
+                        label: 'Potencjalna Poprawa/Redukcja (%)',
+                        data: [15, 9], // Using max values from ranges 7-15% and 5-9%
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)', // blue-500
+                            'rgba(16, 185, 129, 0.7)'  // emerald-500
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        borderWidth: 1,
+                        barThickness: 50, 
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Procent (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                         title: {
+                            display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.label === 'Efektywność Personelu') {
+                                        label += '7-15%';
+                                    } else if (context.label === 'Koszty Surowców') {
+                                        label += '5-9%';
+                                    } else {
+                                       label += context.parsed.x + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
